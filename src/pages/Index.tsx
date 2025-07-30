@@ -1,5 +1,6 @@
 import Hero from "@/components/Hero";
 import Features from "@/components/Features";
+import ContactForm from "@/components/ContactForm";
 import CTA from "@/components/CTA";
 
 const Index = () => {
@@ -7,6 +8,7 @@ const Index = () => {
     <div className="min-h-screen">
       <Hero />
       <Features />
+      <ContactForm />
       <CTA />
     </div>
   );
