@@ -14,16 +14,6 @@ const CTA = () => {
             Comece hoje mesmo e veja a diferença.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="hero" size="lg" className="group">
-              Comece gratuitamente
-              <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-            </Button>
-            <Button variant="outline" size="lg">
-              Falar com especialista
-            </Button>
-          </div>
-          
           <p className="text-sm text-muted-foreground">
             Sem compromisso • Cancele quando quiser • Suporte 24/7
           </p>

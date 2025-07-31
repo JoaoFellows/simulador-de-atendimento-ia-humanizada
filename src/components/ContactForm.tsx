@@ -118,7 +118,7 @@ const ContactForm = () => {
   }
 
   return (
-    <section className="py-24 bg-card">
+    <section id="contact-form-section" className="py-24 bg-card">
       <div className="container mx-auto px-6">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-12">
