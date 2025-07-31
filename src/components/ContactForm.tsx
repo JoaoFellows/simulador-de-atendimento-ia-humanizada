@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -18,7 +19,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { Bot, User, Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   nomeEmpresa: z.string().min(2, "Nome da empresa deve ter pelo menos 2 caracteres"),
@@ -27,7 +35,17 @@ const formSchema = z.object({
   tipoAtendimento: z.string().min(1, "Selecione um tipo de atendimento"),
 });
 
+interface Message {
+  text: string;
+  isBot: boolean;
+}
+
 const ContactForm = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -38,10 +56,59 @@ const ContactForm = () => {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    toast.success("Simulação iniciada! Entraremos em contato em breve.");
-    console.log(values);
-    form.reset();
+  const simulateTyping = (duration: number) => {
+    setIsTyping(true);
+    return new Promise(resolve => {
+      setTimeout(() => {
+        setIsTyping(false);
+        resolve(void 0);
+      }, duration);
+    });
+  };
+
+  const displayMessages = async (conversation: string) => {
+    const conversationLines = conversation.split('\n').filter(line => line.trim());
+    setMessages([]);
+    
+    for (const line of conversationLines) {
+      const isBot = line.includes('Atendente:') || line.includes('Bot:') || line.includes('Assistente:');
+      const text = line.replace(/^(Cliente:|Atendente:|Bot:|Assistente:)\s*/, '');
+      
+      if (text.trim()) {
+        await simulateTyping(1500 + Math.random() * 1000);
+        setMessages(prev => [...prev, { text, isBot }]);
+      }
+    }
+  };
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
+    setIsModalOpen(true);
+    
+    try {
+      const response = await fetch('https://joaofellows.app.n8n.cloud/webhook-test/simulador-ia-conversa', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro na chamada da API');
+      }
+
+      const data = await response.text();
+      await displayMessages(data);
+      
+      toast.success("Simulação concluída!");
+      form.reset();
+    } catch (error) {
+      toast.error("Erro ao simular atendimento. Tente novamente.");
+      console.error('Erro:', error);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -139,14 +206,88 @@ const ContactForm = () => {
                   )}
                 />
 
-                <Button type="submit" className="w-full" size="lg">
-                  Simular Atendimento
+                <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Gerando simulação...
+                    </>
+                  ) : (
+                    "Simular Atendimento"
+                  )}
                 </Button>
               </form>
             </Form>
           </div>
         </div>
       </div>
+
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Simulação de Atendimento</DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex flex-col h-[60vh]">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/30 rounded-lg">
+              {isLoading && messages.length === 0 ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <span className="ml-2 text-muted-foreground">Gerando conversa...</span>
+                </div>
+              ) : (
+                <>
+                  {messages.map((message, index) => (
+                    <div
+                      key={index}
+                      className={`flex items-start gap-3 ${
+                        message.isBot ? 'justify-start' : 'justify-end'
+                      }`}
+                    >
+                      {message.isBot && (
+                        <div className="flex-shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                          <Bot className="w-4 h-4 text-primary-foreground" />
+                        </div>
+                      )}
+                      
+                      <div
+                        className={`max-w-[80%] p-3 rounded-lg ${
+                          message.isBot
+                            ? 'bg-background border text-foreground'
+                            : 'bg-primary text-primary-foreground'
+                        }`}
+                      >
+                        <p className="text-sm">{message.text}</p>
+                      </div>
+                      
+                      {!message.isBot && (
+                        <div className="flex-shrink-0 w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                          <User className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {isTyping && (
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                        <Bot className="w-4 h-4 text-primary-foreground" />
+                      </div>
+                      <div className="bg-background border p-3 rounded-lg">
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };
