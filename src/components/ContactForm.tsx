@@ -44,6 +44,7 @@ const ContactForm = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [typingIsBot, setTypingIsBot] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -67,14 +68,24 @@ const ContactForm = () => {
   };
 
   const displayMessages = async (conversation: string) => {
-    const conversationLines = conversation.split('\n').filter(line => line.trim());
+    const conversationLines = conversation.split('\n').filter(line => line.trim() && !line.trim().startsWith('---'));
     setMessages([]);
     
-    for (const line of conversationLines) {
+    for (let i = 0; i < conversationLines.length; i++) {
+      const line = conversationLines[i];
       const isBot = line.includes('Atendente:') || line.includes('Bot:') || line.includes('Assistente:');
       const text = line.replace(/^(Cliente:|Atendente:|Bot:|Assistente:)\s*/, '');
       
       if (text.trim()) {
+        // Determina quem está "digitando" baseado na próxima mensagem
+        const nextLine = conversationLines[i + 1];
+        const nextIsBot = nextLine ? (nextLine.includes('Atendente:') || nextLine.includes('Bot:') || nextLine.includes('Assistente:')) : null;
+        
+        // Define quem está "digitando" antes do delay
+        if (nextIsBot !== null) {
+          setTypingIsBot(nextIsBot);
+        }
+        
         await simulateTyping(1500 + Math.random() * 1000);
         setMessages(prev => [...prev, { text, isBot }]);
       }
@@ -270,17 +281,38 @@ const ContactForm = () => {
                   ))}
                   
                   {isTyping && (
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                        <Bot className="w-4 h-4 text-primary-foreground" />
-                      </div>
-                      <div className="bg-background border p-3 rounded-lg">
+                    <div className={`flex items-start gap-3 ${
+                      typingIsBot ? 'justify-start' : 'justify-end'
+                    }`}>
+                      {typingIsBot && (
+                        <div className="flex-shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                          <Bot className="w-4 h-4 text-primary-foreground" />
+                        </div>
+                      )}
+                      
+                      <div className={`p-3 rounded-lg ${
+                        typingIsBot 
+                          ? 'bg-background border' 
+                          : 'bg-primary'
+                      }`}>
                         <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                          <div className={`w-2 h-2 rounded-full animate-bounce ${
+                            typingIsBot ? 'bg-muted-foreground' : 'bg-primary-foreground'
+                          }`} style={{ animationDelay: '0ms' }}></div>
+                          <div className={`w-2 h-2 rounded-full animate-bounce ${
+                            typingIsBot ? 'bg-muted-foreground' : 'bg-primary-foreground'
+                          }`} style={{ animationDelay: '150ms' }}></div>
+                          <div className={`w-2 h-2 rounded-full animate-bounce ${
+                            typingIsBot ? 'bg-muted-foreground' : 'bg-primary-foreground'
+                          }`} style={{ animationDelay: '300ms' }}></div>
                         </div>
                       </div>
+                      
+                      {!typingIsBot && (
+                        <div className="flex-shrink-0 w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                          <User className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                      )}
                     </div>
                   )}
                 </>
