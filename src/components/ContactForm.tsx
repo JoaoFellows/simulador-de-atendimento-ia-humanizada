@@ -77,14 +77,8 @@ const ContactForm = () => {
       const text = line.replace(/^(Cliente:|Atendente:|Bot:|Assistente:)\s*/, '');
       
       if (text.trim()) {
-        // Determina quem está "digitando" baseado na próxima mensagem
-        const nextLine = conversationLines[i + 1];
-        const nextIsBot = nextLine ? (nextLine.includes('Atendente:') || nextLine.includes('Bot:') || nextLine.includes('Assistente:')) : null;
-        
-        // Define quem está "digitando" antes do delay
-        if (nextIsBot !== null) {
-          setTypingIsBot(nextIsBot);
-        }
+        // Define quem está "digitando" baseado na mensagem atual
+        setTypingIsBot(isBot);
         
         await simulateTyping(1500 + Math.random() * 1000);
         setMessages(prev => [...prev, { text, isBot }]);
