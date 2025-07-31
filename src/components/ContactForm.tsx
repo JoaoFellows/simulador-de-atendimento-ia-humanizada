@@ -98,8 +98,9 @@ const ContactForm = () => {
         throw new Error('Erro na chamada da API');
       }
 
-      const data = await response.text();
-      await displayMessages(data);
+      const data = await response.json();
+      const conversationContent = data.choices[0].message.content;
+      await displayMessages(conversationContent);
       
       toast.success("Simulação concluída!");
       form.reset();
