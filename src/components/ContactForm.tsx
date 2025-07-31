@@ -91,7 +91,7 @@ const ContactForm = () => {
     setIsModalOpen(true);
     
     try {
-      const response = await fetch('https://joaofellows.app.n8n.cloud/webhook-test/simulador-ia-conversa', {
+      const response = await fetch('https://joaofellows.app.n8n.cloud/webhook/simulador-ia-conversa', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
